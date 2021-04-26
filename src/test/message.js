@@ -26,7 +26,7 @@ after((done) => {
 })
 
 // const SAMPLE_USER_ID  = 'aaaaaaaaaaaa' // 12 byte string
-const SAMPLE_MESSAGE_ID = 'aaaaaaaaaabc' // 12 byte string
+// const SAMPLE_MESSAGE_ID = 'aaaaaaaaaabc' // 12 byte string
 
 describe('Message API endpoints', () => {
     beforeEach((done) => {
@@ -38,8 +38,7 @@ describe('Message API endpoints', () => {
 
         const sampleMessage = new Message({
             title: 'testTitle',
-            body: 'testBody',
-            _id: SAMPLE_MESSAGE_ID
+            body: 'testBody'
         })
 
         sampleUser.save()
@@ -58,7 +57,7 @@ describe('Message API endpoints', () => {
 
     afterEach((done) => {
         User.deleteMany({ username: ['myuser'] })
-        Message.deleteMany({ title: ['testTitle'] })
+        Message.deleteMany({ title: ['testTitle', 'testTitle2', 'Updated testTitle'] })
         .then(() => {
             done()
         })  
@@ -80,76 +79,84 @@ describe('Message API endpoints', () => {
     })
 
     it('should get one specific message', (done) => {
-        const message = Message.findOne({title: 'testTitle'})
-        chai.request(app)
-        .get(`/messages/${message._id}`)
-        .end( (err, res) => {
-            if (err) {
-                done(err)
-            } 
-            else {
-                expect(res).to.have.status(200)
-                expect(res.body).to.be.an('object')
-                expect(res.body.title).to.be.deep.equal('testTitle')
-                expect(res.body.body).to.be.deep.equal('testBody')
-                done()
-            }
+        Message.findOne({title: 'testTitle'})
+        .then(message => {
+            chai.request(app)
+            .get(`/messages/${message._id}`)
+            .end( (err, res) => {
+                if (err) {
+                    done(err)
+                } 
+                else {
+                    expect(res).to.have.status(200)
+                    expect(res.body).to.be.an('object')
+                    expect(res.body.title).to.be.deep.equal('testTitle')
+                    expect(res.body.body).to.be.deep.equal('testBody')
+                    done()
+                }
+            })
         })
     })
 
     it('should post a new message', (done) => {
-        const user = User.findOne({username: 'myuser'})
-        chai.request(app)
-        .post(`/messages`)
-        .send({title: 'testTitle2', body: 'testBody2', author: user})
-        .end( (err, res) => {
-            if (err) {
-                done(err)
-            } 
-            else {
-                expect(res.body.title).to.be.deep.equal('testTitle2')
-                expect(res.body.body).to.be.deep.equal('testBody2')
-                expect(res.body.author).to.be.equal(`${user._id}`)
+        User.findOne({username: 'myuser'})
+        .then( user => {
+            chai.request(app)
+            .post(`/messages`)
+            .send({title: 'testTitle2', body: 'testBody2', author: user})
+            .end( (err, res) => {
+                if (err) {
+                    done(err)
+                } 
+                else {
+                    expect(res.body.title).to.be.deep.equal('testTitle2')
+                    expect(res.body.body).to.be.deep.equal('testBody2')
+                    expect(res.body.author).to.be.equal(`${user._id}`)
 
-                Message.findOne({title: 'testTitle2'})
-                .then( (message) => {
-                    expect(message).to.be.an('object')
-                    done()
-                })
-            }
+                    Message.findOne({title: 'testTitle2'})
+                    .then( (message) => {
+                        expect(message).to.be.an('object')
+                        done()
+                    })
+                }
+            })
         })
     })
 
     it('should update a message', (done) => {
-        const message = Message.findOne({title: 'testTitle'})
-        chai.request(app)
-        .put(`/messages/${message._id}`)
-        .send({title: 'Updated testTitle'})
-        .end( (err, res) => {
-            if (err) { 
-                done(err) 
-            }
-            expect(res.body.message.title).to.be.deep.equal('Updated testTitle')
-            expect(res.body.message).to.have.property('title', 'Updated testTitle')
-            
-            Message.findOne({title: 'Updated testTitle'})
-            .then( (message) => {
-                expect(message.title).to.be.deep.equal('Updated testTitle')
-                done()
+        Message.findOne({title: 'testTitle'})
+        .then( message => {
+            chai.request(app)
+            .put(`/messages/${message._id}`)
+            .send({title: 'Updated testTitle'})
+            .end( (err, res) => {
+                if (err) { 
+                    done(err) 
+                }
+                expect(res.body.message.title).to.be.deep.equal('Updated testTitle')
+                expect(res.body.message).to.have.property('title', 'Updated testTitle')
+
+                Message.findOne({title: 'Updated testTitle'})
+                .then( (message) => {
+                    expect(message.title).to.be.deep.equal('Updated testTitle')
+                    done()
+                })
             })
         })
     })
 
     it('should delete a message', (done) => {
-        const message = Message.findOne({title: 'testTitle'})
-        chai.request(app)
-        .delete(`/messages/${message._id}`)
-        .end( (err, res) => {
-            if (err) {
-                done(err)
-            }
-            expect(res.body.message).to.be.deep.equal('Message Deleted')
-            done()
+        Message.findOne({title: 'testTitle'})
+        .then(message => {
+            chai.request(app)
+            .delete(`/messages/${message._id}`)
+            .end( (err, res) => {
+                if (err) {
+                    done(err)
+                }
+                expect(res.body.message).to.be.deep.equal('Message was deleted.')
+                done()
+            })
         })
     })
 })
